@@ -14,14 +14,19 @@ http://crystal.apana.org.au/ghansper/midi_introduction/midi_file_format.html
 http://www.argonet.co.uk/users/lenny/midi/mfile.html
 """
 
-import sys, string, types, exceptions
+import sys
+import string
+import types
+import exceptions
 
 debugflag = 0
 
+
 def showstr(str, n=16):
     for x in str[:n]:
-        print ('%02x' % ord(x)),
+        print('%02x' % ord(x)),
     print
+
 
 def getNumber(str, length):
     # MIDI uses big-endian for everything
@@ -29,6 +34,7 @@ def getNumber(str, length):
     for i in range(length):
         sum = (sum << 8) + ord(str[i])
     return sum, str[length:]
+
 
 def getVariableLengthNumber(str):
     sum = 0
@@ -40,16 +46,18 @@ def getVariableLengthNumber(str):
         if not (x & 0x80):
             return sum, str[i:]
 
+
 def putNumber(num, length):
     # MIDI uses big-endian for everything
-    lst = [ ]
+    lst = []
     for i in range(length):
         n = 8 * (length - 1 - i)
         lst.append(chr((num >> n) & 0xFF))
     return string.join(lst, "")
 
+
 def putVariableLengthNumber(x):
-    lst = [ ]
+    lst = []
     while 1:
         y, x = x & 0x7F, x >> 7
         lst.append(chr(y + 0x80))
@@ -63,13 +71,14 @@ def putVariableLengthNumber(x):
 class EnumException(exceptions.Exception):
     pass
 
+
 class Enumeration:
     def __init__(self, enumList):
-        lookup = { }
-        reverseLookup = { }
+        lookup = {}
+        reverseLookup = {}
         i = 0
-        uniqueNames = [ ]
-        uniqueValues = [ ]
+        uniqueNames = []
+        uniqueValues = []
         for x in enumList:
             if type(x) == types.TupleType:
                 x, i = x
@@ -88,21 +97,26 @@ class Enumeration:
             i = i + 1
         self.lookup = lookup
         self.reverseLookup = reverseLookup
+
     def __add__(self, other):
-        lst = [ ]
+        lst = []
         for k in self.lookup.keys():
             lst.append((k, self.lookup[k]))
         for k in other.lookup.keys():
             lst.append((k, other.lookup[k]))
         return Enumeration(lst)
+
     def hasattr(self, attr):
         return self.lookup.has_key(attr)
+
     def has_value(self, attr):
         return self.reverseLookup.has_key(attr)
+
     def __getattr__(self, attr):
         if not self.lookup.has_key(attr):
             raise AttributeError
         return self.lookup[attr]
+
     def whatis(self, value):
         return self.reverseLookup[value]
 
@@ -146,6 +160,7 @@ metaEvents = Enumeration([("SEQUENCE_NUMBER", 0x00),
 # it doesn't seem to do any harm to implement it as a global.
 runningStatus = None
 
+
 class MidiEvent:
 
     def __init__(self, track):
@@ -165,7 +180,7 @@ class MidiEvent:
               repr(self.channel)))
         for attrib in ["pitch", "data", "velocity"]:
             if getattr(self, attrib) != None:
-                r = r + ", " + attrib + "=" + repr(getattr(self,attrib))
+                r = r + ", " + attrib + "=" + repr(getattr(self, attrib))
         return r + ">"
 
     def read(self, time, str):
@@ -183,7 +198,7 @@ class MidiEvent:
             self.channel = (x & 0x0F) + 1
             self.type = channelVoiceMessages.whatis(y)
             if (self.type == "PROGRAM_CHANGE" or
-                self.type == "CHANNEL_KEY_PRESSURE"):
+                    self.type == "CHANNEL_KEY_PRESSURE"):
                 self.data = z
                 return str[2:]
             else:
@@ -191,7 +206,7 @@ class MidiEvent:
                 self.velocity = ord(str[2])
                 channel = self.track.channels[self.channel - 1]
                 if (self.type == "NOTE_OFF" or
-                    (self.velocity == 0 and self.type == "NOTE_ON")):
+                        (self.velocity == 0 and self.type == "NOTE_ON")):
                     channel.noteOff(self.pitch, self.time)
                 elif self.type == "NOTE_ON":
                     channel.noteOn(self.pitch, self.time, self.velocity)
@@ -232,7 +247,7 @@ class MidiEvent:
             x = chr((self.channel - 1) +
                     getattr(channelVoiceMessages, self.type))
             if (self.type != "PROGRAM_CHANGE" and
-                self.type != "CHANNEL_KEY_PRESSURE"):
+                    self.type != "CHANNEL_KEY_PRESSURE"):
                 data = chr(self.pitch) + chr(self.velocity)
             else:
                 data = chr(self.data)
@@ -258,6 +273,7 @@ class MidiEvent:
         else:
             raise "unknown midi event type: " + self.type
 
+
 """
 register_note() is a hook that can be overloaded from a script that
 imports this module. Here is how you might do that, if you wanted to
@@ -270,6 +286,7 @@ def register_note(t, c, p, v, t1, t2):
     notelist.append((t, c, p, v, t1, t2))
 midi.register_note = register_note
 """
+
 
 def register_note(track_index, channel_index, pitch, velocity,
                   keyDownTime, keyUpTime):
@@ -287,7 +304,7 @@ those
     def __init__(self, track, index):
         self.index = index
         self.track = track
-        self.pitches = { }
+        self.pitches = {}
 
     def __repr__(self):
         return "<MIDI channel %d>" % self.index
@@ -317,15 +334,16 @@ class DeltaTime(MidiEvent):
         str = putVariableLengthNumber(self.time)
         return str
 
+
 class MidiTrack:
 
     def __init__(self, index):
         self.index = index
-        self.events = [ ]
-        self.channels = [ ]
+        self.events = []
+        self.channels = []
         self.length = 0
         for i in range(16):
-            self.channels.append(MidiChannel(self, i+1))
+            self.channels.append(MidiChannel(self, i + 1))
 
     def read(self, str):
         time = 0
@@ -354,7 +372,7 @@ class MidiTrack:
 
     def __repr__(self):
         r = "<MidiTrack %d -- %d events\n" % (self.index,
-len(self.events))
+                                              len(self.events))
         for e in self.events:
             r = r + "    " + `e` + "\n"
         return r + "  >"
@@ -365,7 +383,7 @@ class MidiFile:
     def __init__(self):
         self.file = None
         self.format = 1
-        self.tracks = [ ]
+        self.tracks = []
         self.ticksPerQuarterNote = None
         self.ticksPerSecond = None
 
@@ -403,8 +421,9 @@ class MidiFile:
             framesPerSecond = -((division >> 8) | -128)
             ticksPerFrame = division & 0xFF
             assert ticksPerFrame == 24 or ticksPerFrame == 25 or \
-                   ticksPerFrame == 29 or ticksPerFrame == 30
-            if ticksPerFrame == 29: ticksPerFrame = 30  # drop frame
+                ticksPerFrame == 29 or ticksPerFrame == 30
+            if ticksPerFrame == 29:
+                ticksPerFrame = 30  # drop frame
             self.ticksPerSecond = ticksPerFrame * framesPerSecond
         else:
             self.ticksPerQuarterNote = division & 0x7FFF
@@ -451,16 +470,17 @@ def main(argv):
     for x in m.tracks:
         print len(x.events)
     for x in m.tracks[1].events:
-        if(x.type!='DeltaTime'):
+        if(x.type != 'DeltaTime'):
             print str(x)
     m.close()
-    
-    #if printflag:
+
+    # if printflag:
     #    print m
-    #else:
+    # else:
     #    m.open(outfile, "wb")
     #    m.write()
     #    m.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)
