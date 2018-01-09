@@ -192,15 +192,11 @@ vcodec=mpeg4:mbd=2:trell -oac copy -o tmp"+midi_file+".avi")
     #os.system("mencoder -oac copy -ovc copy tmpRunin"+midi_file+".avi "+midi_file+".avi -o FULL"+midi_file+".avi")
     return 1
 
-#make_video("RobosTheme.mid")
-#make_video("ToFarAwayTimes.mid")
-#make_video("OceanPalace.mid")
-#make_video("FrogsTheme.mid")
-#make_video("Lufia2Hope.mid")
-#make_video("MemoriesOfGreen.mid")
-#
-#make_video("mm2wily1.mid")
-#make_video("Flash1_0.mid")#flashman
-#make_video("mm3intr2.mid")#mm3 intro
-#make_video("song_storms.mid")
-#make_video("dreamland2.mid")
+
+
+from sys import argv
+if len(argv) == 1:
+	make_video(raw_input("MIDI File: "))
+
+else:
+	make_video(argv[1])
