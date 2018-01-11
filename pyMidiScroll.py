@@ -119,8 +119,7 @@ def make_pictures(midi_file, mp3_file):
     folder = midi_file + "tmp1"
     while mainloop:
         # Clock.tick(fps)
-        pygame.display.set_caption(
-            "Press Esc to quit. FPS: %.2f" % (Clock.get_fps()))
+        pygame.display.set_caption("pyMidiScroll")
         screen.fill((0, 0, 0))
 
         i = 0
