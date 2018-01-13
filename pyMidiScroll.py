@@ -207,7 +207,20 @@ vcodec=mpeg4:mbd=2:trell -oac copy -o tmp" + midi_file + ".avi")
 
 from sys import argv
 if len(argv) == 1:
-    make_video(raw_input("MIDI File: "))
+    mid_file = raw_input("MIDI File: ")
 
 else:
-    make_video(argv[1])
+    mid_file = argv[1]
+
+make_video(mid_file)
+
+# Delete temp files
+
+from shutil import rmtree
+rmtree(mid_file + "tmp1")
+rmtree(mid_file + "tmp2")
+
+from os import remove
+remove(mid_file + ".wav")
+remove("fluid" + mid_file + ".wav")
+remove("tmp" + mid_file + ".avi")
