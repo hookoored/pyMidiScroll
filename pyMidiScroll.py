@@ -71,7 +71,7 @@ def get_note_lists(tracks):
 
 
 def make_pictures(midi_file, mp3_file):
-    mainloop, fps, screen_width, screen_height = True, 30., 400, 320
+    mainloop, fps, screen_width, screen_height = True, 30., 800, 640
     offset = -screen_width
     song_duration = getMP3Duration(mp3_file)
     print song_duration
@@ -132,7 +132,7 @@ def make_pictures(midi_file, mp3_file):
                 rect = (note[2] / ticksPerPixel - offset,
                         height_offset - note[0] * pitch_height,
                         (note[3] - note[2]) / ticksPerPixel - 1,
-                        2 + note[1] / 32)
+                        2 + note[1] / (screen_height / 40))
                 if(note[3] == end_note and rect[0] + rect[2] < screen_width / 2):
                     mainloop = False
                 if(rect[0] > screen_width or rect[0] + rect[2] < 0):
@@ -153,7 +153,7 @@ def make_pictures(midi_file, mp3_file):
         while not rects.empty():
             rect = rects.get()
             # print rect[0], rects.qsize()
-            pygame.draw.rect(screen, rect[1], rect[2])
+            pygame.draw.ellipse(screen, rect[1], rect[2])
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 mainloop = False  # Be IDLE friendly!
