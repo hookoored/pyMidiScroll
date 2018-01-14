@@ -1,4 +1,7 @@
 """
+TODO: convert to mido
+TODO: add more user control over animation (more options)
+TODO: convert to python3
 TODO: cleanup
 TODO: pick colors more intelligently
 TODO: include run-in file so video doesn't start immediately playing
