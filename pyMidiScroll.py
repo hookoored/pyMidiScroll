@@ -1,5 +1,6 @@
 """
 TODO: add more user control over animation (more options)
+TODO: fix desync when midi changes tempo
 TODO: convert to python3
 TODO: cleanup
 TODO: pick colors more intelligently
@@ -16,9 +17,8 @@ technique: make a list of notes, sort them by duration, and then draw them all a
 """
 import pygame
 import random
-import midi
 from mido import MidiFile, second2tick
-import Queue
+import queue
 import os
 
 
@@ -26,7 +26,7 @@ def getMP3Duration(mp3_file):
     mp3_file = mp3_file.replace(" ", "\\ ")
     x = os.popen("ffmpeg -i " + mp3_file + " 2>&1 | grep Duration")
     time = x.readline()
-    print time
+    print(time)
     time = time.split(" ")[3].split(":")
     time = float(time[0]) * 60 * 60 + float(time[1]) * 60 + float(time[2][:-1])
     return time
@@ -86,11 +86,9 @@ def get_note_lists(tracks, tpb):
                     lowest_note = msg.note
                 if(msg.note > highest_note):
                     highest_note = msg.note
-            if msg.type == "END_OF_TRACK":
-                print msg
+            if msg.type == "end_of_track":
+                print(msg)
         note_lists += [note_list]
-    print "max_len:", max_len, max_len2
-    print 'nl', (max(max_len, max_len2), note_lists, lowest_note, highest_note, max_len)
     return (max(max_len, max_len2) * 6, note_lists, lowest_note, highest_note, max_len * 6)
 
 
@@ -98,7 +96,7 @@ def make_pictures(midi_file, mp3_file):
     mainloop, fps, screen_width, screen_height = True, 30., 800, 640
     offset = -screen_width
     song_duration = getMP3Duration(mp3_file)
-    print song_duration
+    print(song_duration)
     pygame.init()
 
     screen = pygame.display.set_mode([screen_width, screen_height])
@@ -110,8 +108,8 @@ def make_pictures(midi_file, mp3_file):
     (max_len, note_lists, lowest_note, highest_note,
      end_note) = get_note_lists(m.tracks, m.ticks_per_beat)
     note_range = highest_note - lowest_note
-    print (max_len, note_lists, lowest_note, highest_note,
-     end_note)
+    print((max_len, note_lists, lowest_note, highest_note,
+     end_note))
     # the number of pixels difference for going up by 1 in pitch
     pitch_height = float(screen_height - 30) / note_range
     height_offset = screen_height + lowest_note * pitch_height - 15
@@ -123,18 +121,18 @@ def make_pictures(midi_file, mp3_file):
         (51, 255, 255),
         (51, 000, 255),
         (153, 000, 255),
-        (153, 051, 000),
+        (153, 51, 000),
         (204, 000, 000),
         (204, 000, 255),
         (153, 000, 000),
         (204, 000, 102),
-        (204, 051, 204),
+        (204, 51, 204),
     ]
     colors = colors * 5  # in case there are a lot of tracks...
     colors = colors[:len(note_lists)]
 
     ticksPerPixel = float(max_len) / (fps * song_duration)
-    print ticksPerPixel, "tpp"
+    print(ticksPerPixel, "tpp")
     pygame.mixer.music.load(mp3_file)
     playing = False
 
@@ -147,7 +145,7 @@ def make_pictures(midi_file, mp3_file):
         screen.fill((0, 0, 0))
 
         i = 0
-        rects = Queue.PriorityQueue()
+        rects = queue.PriorityQueue()
         for notes in note_lists:
             # Put all of the rectangles we are going to draw into a priority queue
             # sorted by duration, so that shorter notes don't get covered
@@ -189,7 +187,7 @@ def make_pictures(midi_file, mp3_file):
         index = '0' * (10 - len(index)) + index
         pygame.image.save(screen, folder + "/frame" + index + ".jpeg")
         offset += 1
-    print offset
+    print(offset)
     pygame.quit()  # Be IDLE friendly!
 
 
