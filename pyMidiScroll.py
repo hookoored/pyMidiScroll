@@ -1,5 +1,4 @@
 """
-TODO: convert to mido
 TODO: add more user control over animation (more options)
 TODO: convert to python3
 TODO: cleanup
@@ -18,6 +17,7 @@ technique: make a list of notes, sort them by duration, and then draw them all a
 import pygame
 import random
 import midi
+from mido import MidiFile, second2tick
 import Queue
 import os
 
@@ -32,45 +32,66 @@ def getMP3Duration(mp3_file):
     return time
 
 
-"""
-Returns a list of lists of notes and the number of ticks. Each note is of the form
-[pitch,velocity,start_time,end_time]
-where start_time and end_time are in ticks (which has no relation to
-time or picture frames)
+def get_note_lists(tracks, tpb):
+    """
+    Returns a list of lists of notes and the number of ticks. Each note is of the form
+    [pitch,velocity,start_time,end_time]
+    where start_time and end_time are in ticks (which has no relation to
+    time or picture frames)
 
-Each track from the midi is represented as a different list of notes.
-"""
-
-
-def get_note_lists(tracks):
+    Each track from the midi is represented as a different list of notes.
+    """
     note_lists = []
     max_len = 0
     max_len2 = 0
     lowest_note = 9999
     highest_note = 0
+    # Current tempo
+    tempo = 500000
+    # Time elapsed since beginning (in ticks)
+    time_elapsed = 0
     for track in tracks:
         note_dic = {}
+        # List of notes in the format listed above
         note_list = []
-        for event in track.events:
-            if(event.time > max_len2):
-                max_len2 = event.time
-            if event.type == 'NOTE_ON' or event.type == 'NOTE_OFF':
-                if(not event.pitch in note_dic):
-                    note_dic[event.pitch] = [event.velocity, event.time]
+        for msg in track:
+            # Change multiplier to be consistent with tempo
+            if msg.type == 'set_tempo':
+                tempo = msg.tempo
+
+            if msg.type == 'note_on' or msg.type == 'note_off':
+                # Delta time of message
+                time = second2tick(msg.time, tpb, tempo) / 640
+                if(time > max_len2):
+                    max_len2 = time
+                if(not msg.note in note_dic):
+                    note_dic[msg.note] = [msg.velocity, time]
                 else:
-                    note_list += [[event.pitch] +
-                                  note_dic.pop(event.pitch) + [event.time]]
-                if(event.time > max_len):
-                    max_len = event.time
-                if(event.pitch < lowest_note):
-                    lowest_note = event.pitch
-                if(event.pitch > highest_note):
-                    highest_note = event.pitch
-            if event.type == "END_OF_TRACK":
-                print event
+                    # Note in [pitch,velocity,start_time,end_time] format
+                    note = [msg.note] + note_dic.pop(msg.note) + [time]
+
+                    # Adjust timings with time_elapsed
+                    note[2] += time_elapsed
+                    note[3] += note[2]
+
+                    # Update time_elapsed
+                    time_elapsed = note[3]
+
+                    # Add note to list
+                    note_list += [note]
+                    print(note[3] - note[2])
+                if(time > max_len):
+                    max_len = time
+                if(msg.note < lowest_note):
+                    lowest_note = msg.note
+                if(msg.note > highest_note):
+                    highest_note = msg.note
+            if msg.type == "END_OF_TRACK":
+                print msg
         note_lists += [note_list]
     print "max_len:", max_len, max_len2
-    return (max(max_len, max_len2), note_lists, lowest_note, highest_note, max_len)
+    print 'nl', (max(max_len, max_len2), note_lists, lowest_note, highest_note, max_len)
+    return (max(max_len, max_len2) * 6, note_lists, lowest_note, highest_note, max_len * 6)
 
 
 def make_pictures(midi_file, mp3_file):
@@ -84,13 +105,13 @@ def make_pictures(midi_file, mp3_file):
     screen.fill([0, 0, 0])
 
     Clock = pygame.time.Clock()
-    m = midi.MidiFile()
-    m.open(midi_file)
-    m.read()
+    m = MidiFile(midi_file)
 
     (max_len, note_lists, lowest_note, highest_note,
-     end_note) = get_note_lists(m.tracks)
+     end_note) = get_note_lists(m.tracks, m.ticks_per_beat)
     note_range = highest_note - lowest_note
+    print (max_len, note_lists, lowest_note, highest_note,
+     end_note)
     # the number of pixels difference for going up by 1 in pitch
     pitch_height = float(screen_height - 30) / note_range
     height_offset = screen_height + lowest_note * pitch_height - 15
